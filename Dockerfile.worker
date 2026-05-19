@@ -1,0 +1,10 @@
+FROM node:20-alpine
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+RUN npm ci
+RUN npx prisma generate
+COPY . .
+ENV NODE_ENV=production
+CMD ["npx", "tsx", "--env-file=.env.production", "lib/queue/worker.ts"]

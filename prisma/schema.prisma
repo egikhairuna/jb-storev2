@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CASHIER
+  ADMIN
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SYNCED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  auditLogs AuditLog[]
+}
+
+model Product {
+  id            String           @id
+  name          String
+  price         Float
+  stock         Int              @default(0)
+  computedStock Int              @default(0)
+  stockStatus   String           @default("instock")
+  stockPriority Int              @default(2)
+  sku           String?
+  type          String
+  image         String?
+  variants      ProductVariant[]
+  lastUpdated   DateTime?
+  categoryIds   String           @default("[]")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([sku])
+  @@index([stockPriority])
+  @@index([stockStatus])
+}
+
+model ProductVariant {
+  id         String   @id
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String?
+  name       String
+  price      Float
+  stock      Int      @default(0)
+  attributes Json?
+
+  @@index([sku])
+  @@index([productId])
+}
+
+model Order {
+  id              String           @id @default(cuid())
+  posOrderId      String           @unique
+  wcOrderId       String?          @unique
+  cashierId       String?
+  cashier         User?            @relation(fields: [cashierId], references: [id])
+  items           String
+  subtotal        Float
+  discountAmount  Float            @default(0)
+  taxAmount       Float            @default(0)
+  total           Float
+  paymentMethod   String
+  cashAmount      Float?
+  transferAmount  Float?
+  syncStatus      SyncStatus       @default(PENDING)
+  retryCount      Int              @default(0)
+  errorMessage    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  wcStatus           String   @default("pending")
+  customerName       String?
+  orderNote          String?
+  discountType       String?
+  discountValue      Float?   @default(0)
+  source             String   @default("pos")
+  paymentMethodTitle String?
+
+  idempotencyKeys IdempotencyKey[]
+  auditLogs       AuditLog[]
+
+  @@index([cashierId])
+  @@index([syncStatus])
+}
+
+model IdempotencyKey {
+  key       String    @id @default(uuid())
+  orderId   String?
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  response  String?
+  createdAt DateTime  @default(now())
+}
+
+model SyncLock {
+  id           String    @id
+  isLocked     Boolean   @default(false)
+  syncId       String?
+  lockedAt     DateTime?
+  lastSyncedAt DateTime?
+  updatedAt    DateTime  @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  action    String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([orderId])
+}
