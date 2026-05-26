@@ -9,8 +9,13 @@ git pull origin main
 # Build containers (no cache for clean build)
 docker compose -f docker-compose.prod.yml build --no-cache
 
+# Gracefully stop active app and worker to release SQLite file locks
+echo "🛑 Stopping active app and worker containers to release SQLite locks..."
+docker compose -f docker-compose.prod.yml stop app worker
+
 # Run database migrations inside app container
 docker compose -f docker-compose.prod.yml run --rm app npx -y prisma@6.19.3 migrate deploy
+
 
 
 # Enable WAL mode for SQLite inside app container
