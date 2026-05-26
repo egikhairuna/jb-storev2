@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import type { Product } from '@/types/pos';
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;

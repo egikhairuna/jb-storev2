@@ -23,12 +23,12 @@ export function useSyncProducts() {
 
       // Force refetch all product queries
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.products(),
+        queryKey: ['products'],
         refetchType: 'active',
       });
       // Also refetch immediately
       queryClient.refetchQueries({
-        queryKey: QUERY_KEYS.products(),
+        queryKey: ['products'],
         type: 'active',
       });
     }
