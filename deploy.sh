@@ -12,6 +12,21 @@ docker compose -f docker-compose.prod.yml build --no-cache
 # Run database migrations inside app container
 docker compose -f docker-compose.prod.yml run --rm app npx prisma migrate deploy
 
+# Enable WAL mode for SQLite inside app container
+echo "🔄 Enabling SQLite Write-Ahead Logging (WAL) Mode..."
+docker compose -f docker-compose.prod.yml run --rm app node -e '
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+prisma.$queryRawUnsafe("PRAGMA journal_mode=WAL;").then(res => {
+  console.log("✅ SQLite WAL Mode configured successfully:", res);
+  return prisma.$disconnect();
+}).catch(err => {
+  console.error("❌ Failed to enable SQLite WAL Mode:", err);
+  process.exit(1);
+});
+'
+
+
 # Start/restart all services
 docker compose -f docker-compose.prod.yml up -d
 

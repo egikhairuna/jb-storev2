@@ -6,7 +6,7 @@
 
 ## First Deploy
 
-### 1. On local machine
+### 1. On local machinesud
 ```bash
 npm run build   # verify build is clean
 git push origin main
