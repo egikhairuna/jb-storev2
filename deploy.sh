@@ -10,7 +10,8 @@ git pull origin main
 docker compose -f docker-compose.prod.yml build --no-cache
 
 # Run database migrations inside app container
-docker compose -f docker-compose.prod.yml run --rm app npx prisma migrate deploy
+docker compose -f docker-compose.prod.yml run --rm app npx -y prisma@6.19.3 migrate deploy
+
 
 # Enable WAL mode for SQLite inside app container
 echo "🔄 Enabling SQLite Write-Ahead Logging (WAL) Mode..."
