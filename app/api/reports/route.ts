@@ -243,6 +243,7 @@ export async function GET(request: NextRequest) {
         name?: string;
         sku?: string;
         quantity?: number;
+        price?: number;
         variantName?: string;
       }> = [];
       try {
@@ -251,84 +252,71 @@ export async function GET(request: NextRequest) {
         items = [];
       }
 
-      const itemCount = items.length || 1;
-      const cashPerItem =
-        order.cashAmount != null ? order.cashAmount / itemCount : null;
-      const transferPerItem =
-        order.transferAmount != null
-          ? order.transferAmount / itemCount
-          : null;
-
       const rawDate = new Date(order.createdAt);
       const tanggal = formatTanggal(rawDate);
 
-      // If payment method is cash and no cashAmount stored, derive from total
-      if (
-        order.paymentMethod === "cash" &&
-        cashPerItem === null
-      ) {
-        for (const item of items) {
-          posRows.push({
-            rawDate,
-            tanggal,
-            sumber: "POS",
-            orderId: `#${order.posOrderId.slice(-6)}`,
-            sku: item.sku || "-",
-            productName: item.variantName
-              ? `${item.name} - ${item.variantName}`
-              : item.name || "-",
-            qty: item.quantity || 1,
-            cash: order.total / itemCount,
-            transfer: null,
-            ongkosKirim: null,
-            customerName: order.customerName || null,
-            noHp: null,
-            alamat: null,
-          });
+      // Determine customer name: filter out "JB - Store" or null
+      const customerName =
+        order.customerName === "JB - Store" || !order.customerName
+          ? null
+          : order.customerName;
+
+      const subtotal = order.subtotal > 0 ? order.subtotal : 1;
+      const cashAmount = order.cashAmount ?? 0;
+      const transferAmount = order.transferAmount ?? 0;
+
+      let accumulatedCash = 0;
+      let accumulatedTransfer = 0;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const itemPrice = item.price ?? 0;
+        const itemQty = item.quantity ?? 1;
+        const itemValue = itemPrice * itemQty;
+
+        let cash: number | null = null;
+        let transfer: number | null = null;
+
+        if (order.paymentMethod === "cash") {
+          cash = itemValue;
+          transfer = null;
+        } else if (order.paymentMethod === "transfer") {
+          cash = null;
+          transfer = itemValue;
+        } else if (order.paymentMethod === "split") {
+          const itemProportion = itemValue / subtotal;
+          
+          if (i === items.length - 1) {
+            cash = Math.round(cashAmount - accumulatedCash);
+            transfer = Math.round(transferAmount - accumulatedTransfer);
+          } else {
+            cash = Math.round(cashAmount * itemProportion);
+            transfer = Math.round(transferAmount * itemProportion);
+            accumulatedCash += cash;
+            accumulatedTransfer += transfer;
+          }
+        } else {
+          cash = itemValue;
+          transfer = null;
         }
-      } else if (
-        order.paymentMethod === "transfer" &&
-        transferPerItem === null
-      ) {
-        for (const item of items) {
-          posRows.push({
-            rawDate,
-            tanggal,
-            sumber: "POS",
-            orderId: `#${order.posOrderId.slice(-6)}`,
-            sku: item.sku || "-",
-            productName: item.variantName
-              ? `${item.name} - ${item.variantName}`
-              : item.name || "-",
-            qty: item.quantity || 1,
-            cash: null,
-            transfer: order.total / itemCount,
-            ongkosKirim: null,
-            customerName: order.customerName || null,
-            noHp: null,
-            alamat: null,
-          });
-        }
-      } else {
-        for (const item of items) {
-          posRows.push({
-            rawDate,
-            tanggal,
-            sumber: "POS",
-            orderId: `#${order.posOrderId.slice(-6)}`,
-            sku: item.sku || "-",
-            productName: item.variantName
-              ? `${item.name} - ${item.variantName}`
-              : item.name || "-",
-            qty: item.quantity || 1,
-            cash: cashPerItem,
-            transfer: transferPerItem,
-            ongkosKirim: null,
-            customerName: order.customerName || null,
-            noHp: null,
-            alamat: null,
-          });
-        }
+
+        posRows.push({
+          rawDate,
+          tanggal,
+          sumber: "POS",
+          orderId: `#${order.posOrderId.slice(-6)}`,
+          sku: item.sku || "-",
+          productName: item.variantName
+            ? `${item.name} - ${item.variantName}`
+            : item.name || "-",
+          qty: itemQty,
+          cash,
+          transfer,
+          ongkosKirim: null,
+          customerName,
+          noHp: null,
+          alamat: null,
+        });
       }
     }
 
@@ -342,8 +330,6 @@ export async function GET(request: NextRequest) {
       const sumber = isPOS ? "POS" : "Website";
 
       const lineItems = order.line_items || [];
-      const itemCount = lineItems.length || 1;
-      const orderTotal = parseFloat(order.total) || 0;
       const shippingTotal = parseFloat(order.shipping_total || "0") || 0;
 
       // Check for POS cash/transfer meta on WC orders
@@ -353,22 +339,8 @@ export async function GET(request: NextRequest) {
       const transferMeta = order.meta_data?.find(
         (m) => m.key === "_pos_transfer_amount"
       );
-
-      let cashPerItem: number | null = null;
-      let transferPerItem: number | null = null;
-
-      if (order.payment_method === "pos_split" || (cashMeta && transferMeta)) {
-        // Split payment
-        cashPerItem = (parseFloat(String(cashMeta?.value)) || 0) / itemCount;
-        transferPerItem =
-          (parseFloat(String(transferMeta?.value)) || 0) / itemCount;
-      } else if (order.payment_method === "pos_cash" || cashMeta) {
-        // Cash payment
-        cashPerItem = orderTotal / itemCount;
-      } else {
-        // Default: assume transfer for website orders / pos_transfer
-        transferPerItem = orderTotal / itemCount;
-      }
+      const cashAmount = cashMeta ? (parseFloat(String(cashMeta.value)) || 0) : 0;
+      const transferAmount = transferMeta ? (parseFloat(String(transferMeta.value)) || 0) : 0;
 
       const customerName = [
         order.billing?.first_name,
@@ -376,6 +348,10 @@ export async function GET(request: NextRequest) {
       ]
         .filter(Boolean)
         .join(" ") || null;
+      
+      const resolvedCustomerName = isPOS
+        ? (customerName === "JB - Store" || !customerName ? null : customerName)
+        : customerName;
 
       const noHp = order.billing?.phone || null;
       const alamat = [
@@ -393,7 +369,47 @@ export async function GET(request: NextRequest) {
           : new Date(order.date_created + "+07:00"));
       const tanggal = formatTanggal(rawDate);
 
-      for (const item of lineItems) {
+      let accumulatedCash = 0;
+      let accumulatedTransfer = 0;
+
+      for (let i = 0; i < lineItems.length; i++) {
+        const item = lineItems[i];
+        const itemTotal = parseFloat(item.total) || 0;
+
+        let cash: number | null = null;
+        let transfer: number | null = null;
+
+        if (!isPOS) {
+          // Website order: use lineItem.total as transfer
+          cash = null;
+          transfer = itemTotal;
+        } else {
+          // POS order synced to WC
+          if (order.payment_method === "pos_split" || (cashMeta && transferMeta)) {
+            // Split payment: proportional distribution based on sum of line item totals
+            const totalItemsSum = lineItems.reduce((sum, it) => sum + (parseFloat(it.total) || 0), 0) || 1;
+            const itemProportion = itemTotal / totalItemsSum;
+            
+            if (i === lineItems.length - 1) {
+              cash = Math.round(cashAmount - accumulatedCash);
+              transfer = Math.round(transferAmount - accumulatedTransfer);
+            } else {
+              cash = Math.round(cashAmount * itemProportion);
+              transfer = Math.round(transferAmount * itemProportion);
+              accumulatedCash += cash;
+              accumulatedTransfer += transfer;
+            }
+          } else if (order.payment_method === "pos_cash" || cashMeta) {
+            // Cash payment
+            cash = itemTotal;
+            transfer = null;
+          } else {
+            // Default: assume transfer (pos_transfer, bacs, website payments, etc.)
+            cash = null;
+            transfer = itemTotal;
+          }
+        }
+
         wcRows.push({
           rawDate,
           tanggal,
@@ -402,10 +418,10 @@ export async function GET(request: NextRequest) {
           sku: item.sku || "-",
           productName: item.name || "-",
           qty: item.quantity || 1,
-          cash: cashPerItem,
-          transfer: transferPerItem,
+          cash,
+          transfer,
           ongkosKirim: shippingTotal > 0 ? shippingTotal : null,
-          customerName,
+          customerName: resolvedCustomerName,
           noHp,
           alamat,
         });
