@@ -9,47 +9,49 @@ interface PrintButtonProps {
   contentRef: React.RefObject<HTMLDivElement | null>;
 }
 
+const pageStyle = `
+@page {
+  size: 100mm 30mm;
+  margin: 0;
+}
+body { margin: 0; padding: 0; }
+@media print {
+  html, body {
+    height: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+  .print-page { page-break-after: always; }
+  .print-page:last-child { page-break-after: auto; }
+}
+`;
+
 export const PrintButton = ({ contentRef }: PrintButtonProps) => {
   const { items } = useBarcodeStore();
+
   const handlePrint = useReactToPrint({
-    contentRef: contentRef,
+    contentRef,
     documentTitle: "Barcode Labels",
+    pageStyle,
   });
 
   return (
-    <>
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-area, .print-area * { visibility: visible; }
-          .print-area { 
-            position: absolute; 
-            left: 0; 
-            top: 0; 
-            width: 100%;
-            height: auto;
-          }
-          @page { 
-            size: auto; 
-            margin: 0mm; 
-          }
-          /* Ensure grid prints correctly */
-          .print-area {
-            display: grid !important;
-            grid-template-columns: repeat(2, 50mm) !important;
-            gap: 3.5mm !important;
-            padding: 10mm !important;
-          }
-        }
-      `}</style>
-      <button
-        onClick={() => handlePrint()}
-        disabled={items.length === 0}
-        className="h-10 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm shadow-blue-600/10 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed"
-      >
-        <Printer className="h-4 w-4" />
-        Print Label
-      </button>
-    </>
+    <button
+      onClick={() => handlePrint()}
+      disabled={items.length === 0}
+      style={{
+        background: items.length === 0
+          ? "rgba(255,255,255,0.05)"
+          : "rgba(59,130,246,0.2)",
+        border: items.length === 0
+          ? "1px solid rgba(255,255,255,0.08)"
+          : "1px solid rgba(59,130,246,0.3)",
+      }}
+      className="h-9 px-4 rounded-lg text-xs font-medium flex items-center gap-2 transition-all duration-200 disabled:text-white/20 disabled:cursor-not-allowed text-blue-400 hover:bg-blue-500/30"
+    >
+      <Printer className="h-3.5 w-3.5" />
+      Print Labels
+    </button>
   );
 };

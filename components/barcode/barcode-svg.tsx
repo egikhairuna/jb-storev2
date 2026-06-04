@@ -1,41 +1,50 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import JsBarcode from "jsbarcode";
 
 interface BarcodeSvgProps {
   value: string;
   width?: number;
   height?: number;
+  className?: string;
 }
 
-export const BarcodeSvg = ({ value, width = 1.2, height = 40 }: BarcodeSvgProps) => {
+export const BarcodeSvg = ({
+  value,
+  width = 1.2,
+  height = 30,
+  className,
+}: BarcodeSvgProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (svgRef.current) {
+    if (svgRef.current && value) {
       try {
         JsBarcode(svgRef.current, value, {
           format: "CODE128",
-          width: width,
-          height: height,
+          width,
+          height,
           displayValue: false,
           background: "transparent",
           margin: 0,
         });
-      } catch (error) {
-        console.error("JsBarcode error:", error);
+      } catch {
+        // Silently ignore invalid SKU — must not crash
       }
     }
   }, [value, width, height]);
 
   if (!value) {
     return (
-      <div className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 text-[8px] text-gray-400" style={{ height }}>
-        INVALID SKU
+      <div
+        className="flex items-center justify-center bg-gray-50 border border-dashed border-gray-200 text-[8px] text-gray-400"
+        style={{ height }}
+      >
+        NO SKU
       </div>
     );
   }
 
-  return <svg ref={svgRef} className="w-full h-full" />;
+  return <svg ref={svgRef} className={className ?? "w-full h-full"} />;
 };

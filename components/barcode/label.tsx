@@ -1,45 +1,43 @@
 "use client";
 
 import React from "react";
-import { BarcodeItem } from "@/types/pos";
 import { BarcodeSvg } from "./barcode-svg";
 
 interface BarcodeLabelProps {
-  item: BarcodeItem;
+  name: string;
+  sku: string;
+  price: number;
 }
 
-export const BarcodeLabel = ({ item }: BarcodeLabelProps) => {
+export const BarcodeLabel = ({ name, sku, price }: BarcodeLabelProps) => {
   const formattedPrice = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
-  }).format(item.price);
-
-  const displayName = item.variantName 
-    ? `${item.productName} · ${item.variantName}`
-    : item.productName;
+  })
+    .format(price)
+    .replace("Rp", "Rp ");
 
   return (
-    <div 
-      className="bg-white text-black overflow-hidden flex flex-col border border-gray-200 rounded-sm p-1 print:border-none print:break-inside-avoid print:shadow-none"
-      style={{ width: "50mm", height: "30mm" }}
+    <div
+      className="flex flex-col items-center justify-center p-1 w-[50mm] h-[30mm] bg-white text-black overflow-hidden box-border mx-auto border border-gray-200 print:border-none print:break-inside-avoid"
     >
-      {/* Row 1: Product Name */}
-      <div className="text-[9px] font-medium leading-tight line-clamp-1">
-        {displayName}
+      {/* Product Name */}
+      <div className="text-[10px] font-medium leading-tight line-clamp-2 text-center w-full px-1">
+        {name}
       </div>
 
-      {/* Row 2: Barcode */}
-      <div className="flex-1 w-full flex items-center justify-center overflow-hidden py-0.5">
-        <BarcodeSvg value={item.sku} />
+      {/* Barcode SVG */}
+      <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+        <BarcodeSvg value={sku} width={1.1} height={70} className="w-full" />
       </div>
 
-      {/* Row 3: Footer */}
-      <div className="flex justify-between items-center mt-auto">
-        <span className="text-[8px] font-mono text-gray-500 uppercase">
-          {item.sku || "NO SKU"}
+      {/* Bottom Row: SKU left, Price right */}
+      <div className="flex justify-between items-center w-full px-1">
+        <span className="text-[10px] font-normal text-gray-600">
+          {sku || "NO SKU"}
         </span>
-        <span className="text-[10px] font-mono font-bold">
+        <span className="text-[12px] font-bold">
           {formattedPrice}
         </span>
       </div>
