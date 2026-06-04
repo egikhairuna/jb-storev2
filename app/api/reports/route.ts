@@ -357,15 +357,16 @@ export async function GET(request: NextRequest) {
       let cashPerItem: number | null = null;
       let transferPerItem: number | null = null;
 
-      if (cashMeta && transferMeta) {
+      if (order.payment_method === "pos_split" || (cashMeta && transferMeta)) {
         // Split payment
-        cashPerItem = (parseFloat(String(cashMeta.value)) || 0) / itemCount;
+        cashPerItem = (parseFloat(String(cashMeta?.value)) || 0) / itemCount;
         transferPerItem =
-          (parseFloat(String(transferMeta.value)) || 0) / itemCount;
-      } else if (cashMeta) {
-        cashPerItem = (parseFloat(String(cashMeta.value)) || 0) / itemCount;
+          (parseFloat(String(transferMeta?.value)) || 0) / itemCount;
+      } else if (order.payment_method === "pos_cash" || cashMeta) {
+        // Cash payment
+        cashPerItem = orderTotal / itemCount;
       } else {
-        // Default: assume transfer for website orders
+        // Default: assume transfer for website orders / pos_transfer
         transferPerItem = orderTotal / itemCount;
       }
 
