@@ -272,6 +272,7 @@ export default function ReportsPage() {
                       "CASH",
                       "TRANSFER",
                       "ONGKIR",
+                      "KODE UNIK",
                       "CUSTOMER",
                       "NO HP",
                       "ALAMAT",
@@ -293,7 +294,7 @@ export default function ReportsPage() {
                         borderBottom: "1px solid rgba(255,255,255,0.04)",
                       }}
                     >
-                      {Array.from({ length: 13 }).map((_, j) => (
+                      {Array.from({ length: 14 }).map((_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div
                             className="h-4 rounded animate-pulse"
@@ -322,7 +323,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             /* Data Table */
-            <div className="px-6 min-w-[1400px]">
+            <div className="px-6 min-w-[1500px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-neutral-900/95 backdrop-blur-md z-10">
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -355,6 +356,9 @@ export default function ReportsPage() {
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-24">
                       ONGKIR
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-24">
+                      KODE UNIK
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-32">
                       CUSTOMER
@@ -433,6 +437,11 @@ export default function ReportsPage() {
                             {formatRp(row.ongkosKirim)}
                           </span>
                         ) : (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs font-mono text-white/50">
+                        {row.kodeUnik || (
                           <span className="text-white/20">—</span>
                         )}
                       </td>

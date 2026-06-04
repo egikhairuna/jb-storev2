@@ -313,6 +313,7 @@ export async function GET(request: NextRequest) {
           cash,
           transfer,
           ongkosKirim: null,
+          kodeUnik: null,
           customerName,
           noHp: null,
           alamat: null,
@@ -341,6 +342,11 @@ export async function GET(request: NextRequest) {
       );
       const cashAmount = cashMeta ? (parseFloat(String(cashMeta.value)) || 0) : 0;
       const transferAmount = transferMeta ? (parseFloat(String(transferMeta.value)) || 0) : 0;
+
+      const uniqueCodeMeta = order.meta_data?.find(
+        (m) => m.key === "_unique_payment_code"
+      );
+      const kodeUnik = uniqueCodeMeta?.value ? String(uniqueCodeMeta.value) : null;
 
       const customerName = [
         order.billing?.first_name,
@@ -421,6 +427,7 @@ export async function GET(request: NextRequest) {
           cash,
           transfer,
           ongkosKirim: shippingTotal > 0 ? shippingTotal : null,
+          kodeUnik,
           customerName: resolvedCustomerName,
           noHp,
           alamat,

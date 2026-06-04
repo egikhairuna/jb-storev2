@@ -16,6 +16,7 @@ const HEADERS = [
   "Cash",
   "Transfer",
   "Ongkos Kirim",
+  "Kode Unik",
   "Customer",
   "No HP",
   "Alamat",
@@ -33,6 +34,7 @@ function rowToArray(row: ReportRow): (string | number)[] {
     row.cash ?? "",
     row.transfer ?? "",
     row.ongkosKirim ?? "",
+    row.kodeUnik ?? "",
     row.customerName ?? "",
     row.noHp ?? "",
     row.alamat ?? "",
@@ -74,12 +76,13 @@ export function exportExcel(rows: ReportRow[], filename: string) {
     { wch: 15 },
     { wch: 35 },
     { wch: 6 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 40 },
+    { wch: 15 }, // Cash
+    { wch: 15 }, // Transfer
+    { wch: 15 }, // Ongkos Kirim
+    { wch: 12 }, // Kode Unik
+    { wch: 20 }, // Customer
+    { wch: 15 }, // No HP
+    { wch: 40 }, // Alamat
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Laporan");
@@ -139,17 +142,18 @@ export function exportPDF(
     columnStyles: {
       0: { cellWidth: 8 },
       1: { cellWidth: 25 },
-      2: { cellWidth: 15 },
-      3: { cellWidth: 18 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 40 },
+      2: { cellWidth: 12 },
+      3: { cellWidth: 16 },
+      4: { cellWidth: 18 },
+      5: { cellWidth: 35 },
       6: { cellWidth: 8 },
-      7: { cellWidth: 20 },
-      8: { cellWidth: 20 },
-      9: { cellWidth: 18 },
-      10: { cellWidth: 22 },
-      11: { cellWidth: 20 },
-      12: { cellWidth: "auto" },
+      7: { cellWidth: 18 },
+      8: { cellWidth: 18 },
+      9: { cellWidth: 18 },  // Ongkos Kirim
+      10: { cellWidth: 15 }, // Kode Unik
+      11: { cellWidth: 22 }, // Customer
+      12: { cellWidth: 20 }, // No HP
+      13: { cellWidth: "auto" }, // Alamat
     },
     didParseCell: (data) => {
       // Color SUMBER column

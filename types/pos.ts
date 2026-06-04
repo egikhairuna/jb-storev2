@@ -149,6 +149,7 @@ export interface ReportRow {
   cash: number | null;
   transfer: number | null;
   ongkosKirim: number | null;
+  kodeUnik: string | null;
   customerName: string | null;
   noHp: string | null;
   alamat: string | null;
