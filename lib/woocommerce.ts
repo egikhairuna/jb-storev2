@@ -205,6 +205,7 @@ export async function getOrders(params?: {
   page?: number;
   per_page?: number;
   after?: string;
+  before?: string;
   status?: string;
 }): Promise<{ orders: WCOrderResponse[]; totalPages: number; total: number }> {
   const searchParams = new URLSearchParams({
@@ -215,6 +216,10 @@ export async function getOrders(params?: {
 
   if (params?.after) {
     searchParams.append("after", params.after);
+  }
+
+  if (params?.before) {
+    searchParams.append("before", params.before);
   }
 
   const response = await api.fetch(`/orders?${searchParams.toString()}`, {

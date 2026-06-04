@@ -133,3 +133,34 @@ export interface StockAvailabilityShortfall {
   readonly requested: number;
   readonly actual: number;
 }
+
+/**
+ * Flat line-item row surfaced in the sales report table.
+ * Each row represents one product within an order — an order with 3 products yields 3 rows.
+ */
+export interface ReportRow {
+  no: number;
+  tanggal: string;
+  sumber: 'POS' | 'Website';
+  orderId: string;
+  sku: string;
+  productName: string;
+  qty: number;
+  cash: number | null;
+  transfer: number | null;
+  ongkosKirim: number | null;
+  customerName: string | null;
+  noHp: string | null;
+  alamat: string | null;
+}
+
+/** Aggregated totals computed from the full report dataset. */
+export interface ReportSummary {
+  totalOrders: number;
+  totalItems: number;
+  totalCash: number;
+  totalTransfer: number;
+  totalRevenue: number;
+  posOrders: number;
+  wcOrders: number;
+}

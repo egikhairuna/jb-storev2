@@ -7,6 +7,7 @@ import {
   ShoppingCart, 
   ClipboardList, 
   QrCode, 
+  BarChart2,
   LogOut 
 } from "lucide-react";
 import { useSessionStore } from "@/store/session.store";
@@ -20,6 +21,7 @@ export const SidebarNav = () => {
     { label: "CASHIER", icon: ShoppingCart, href: "/kasir" },
     { label: "ORDERS", icon: ClipboardList, href: "/orders" },
     { label: "BARCODE", icon: QrCode, href: "/barcode" },
+    { label: "REPORTS", icon: BarChart2, href: "/reports" },
   ];
 
   const cashierInitial = cashierName ? cashierName.charAt(0).toUpperCase() : "?";
