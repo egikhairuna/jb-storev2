@@ -369,7 +369,9 @@ export async function GET(request: NextRequest) {
         .join(", ") || null;
 
       const rawDate = order.date_created_gmt
-        ? new Date(order.date_created_gmt)
+        ? (order.date_created_gmt.endsWith("Z") || order.date_created_gmt.includes("+")
+          ? new Date(order.date_created_gmt)
+          : new Date(order.date_created_gmt + "Z"))
         : (order.date_created.endsWith("Z") || order.date_created.includes("+")
           ? new Date(order.date_created)
           : new Date(order.date_created + "+07:00"));
