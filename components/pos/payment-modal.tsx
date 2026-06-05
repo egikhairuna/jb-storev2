@@ -152,7 +152,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
         discountType,
         discountValue,
         taxAmount: 0,
-        cashAmount: paymentMethod === "cash" ? total : isSplit ? parsedCash : 0,
+        cashAmount: paymentMethod === "cash" ? (parsedCash || total) : isSplit ? parsedCash : 0,
         transferAmount: paymentMethod === "transfer" ? total : isSplit ? parsedTransfer : 0,
         customerName: customerName || null,
         orderNote: orderNote || null,

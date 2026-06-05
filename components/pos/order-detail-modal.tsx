@@ -42,7 +42,15 @@ export const OrderDetailModal = ({ order, onClose }: OrderDetailModalProps) => {
     paymentMethod: order.paymentMethod || 'pos_cash',
     cashAmount: order.cashAmount || undefined,
     transferAmount: order.transferAmount || undefined,
-    changeAmount: 0, // Not stored in DB
+    changeAmount: (() => {
+      const pm = order.paymentMethod || '';
+      if (pm === 'pos_cash' || pm === 'cash') {
+        const cash = order.cashAmount ?? 0;
+        const orderTotal = order.total ?? 0;
+        return Math.max(0, cash - orderTotal);
+      }
+      return 0;
+    })(),
     orderNote: order.orderNote || null,
     createdAt: order.createdAt,
     cashierName: order.cashierName || "Kasir"
