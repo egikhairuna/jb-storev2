@@ -16,7 +16,7 @@ export const BarcodeLabel = ({ name, sku, price }: BarcodeLabelProps) => {
     minimumFractionDigits: 0,
   })
     .format(price)
-    .replace("Rp", "Rp ");
+    .replace("Rp", "Rp");
 
   return (
     <div
@@ -33,7 +33,7 @@ export const BarcodeLabel = ({ name, sku, price }: BarcodeLabelProps) => {
       </div>
 
       {/* Bottom Row: SKU left, Price right */}
-      <div className="flex justify-between items-center w-full px-1">
+      <div className="flex justify-between items-center w-full">
         <span className="text-[10px] font-normal text-gray-600">
           {sku || "NO SKU"}
         </span>

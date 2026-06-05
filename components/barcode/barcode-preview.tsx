@@ -77,11 +77,7 @@ export const BarcodePreview = () => {
                         className="w-[50mm] h-[30mm] overflow-hidden"
                       >
                         <BarcodeLabel
-                          name={
-                            item.variantName
-                              ? `${item.productName} - ${item.variantName}`
-                              : item.productName
-                          }
+                          name={item.variantName || item.productName}
                           sku={item.sku}
                           price={item.price}
                         />
