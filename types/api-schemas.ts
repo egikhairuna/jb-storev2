@@ -34,6 +34,8 @@ export const createOrderRequestSchema = z.object({
   transferAmount: z.number().finite().optional(),
   customerName: z.string().nullable().optional(),
   orderNote: z.string().nullable().optional(),
+  other_label: z.string().optional(),
+  other_amount: z.number().finite().optional(),
 });
 
 export type CreateOrderRequest = z.infer<typeof createOrderRequestSchema>;
@@ -87,6 +89,8 @@ export const orderSummarySchema = z.object({
   orderNote: z.string().nullable().optional(),
   cashAmount: z.number().nullable(),
   transferAmount: z.number().nullable(),
+  otherLabel: z.string().nullable().optional(),
+  paymentMethodTitle: z.string().nullable().optional(),
   customerName: z.string().nullable().optional(),
   syncStatus: z.nativeEnum(OrderPersistSyncStatus),
   retryCount: z.number().int(),

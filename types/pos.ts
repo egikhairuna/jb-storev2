@@ -42,11 +42,13 @@ export interface CartItem extends Product {
 export interface POSOrder {
   readonly offline_id: string;
   readonly items: readonly CartItem[];
-  readonly payment_method: "cash" | "transfer" | "split";
+  readonly payment_method: "cash" | "transfer" | "split" | "other";
   readonly given_amount: number;
   readonly change_amount: number;
   readonly cash_amount?: number;
   readonly transfer_amount?: number;
+  readonly other_label?: string;
+  readonly other_amount?: number;
   readonly note?: string | undefined;
   readonly status: "pending" | "syncing" | "synced" | "failed";
   readonly created_at: string;
@@ -64,10 +66,7 @@ export interface POSOrder {
 /**
  * Discriminated tender union matching how cashiers record drawer + bank splits.
  */
-export type PaymentMethod =
-  | CashPaymentFacet
-  | TransferPaymentFacet
-  | SplitPaymentFacet;
+export type PaymentMethod = "cash" | "transfer" | "split" | "other";
 
 /**
  * Cash tenders record both paid and change deltas for cashier accountability.
@@ -146,8 +145,11 @@ export interface ReportRow {
   sku: string;
   productName: string;
   qty: number;
-  cash: number | null;
+  hargaBarang: number;
   transfer: number | null;
+  cash: number | null;
+  others: number | null;
+  diskon: number | null;
   ongkosKirim: number | null;
   kodeUnik: string | null;
   customerName: string | null;
@@ -161,6 +163,7 @@ export interface ReportSummary {
   totalItems: number;
   totalCash: number;
   totalTransfer: number;
+  totalOthers: number;
   totalRevenue: number;
   posOrders: number;
   wcOrders: number;

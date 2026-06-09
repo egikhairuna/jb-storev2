@@ -16,6 +16,7 @@ interface ReceiptProps {
     cashAmount?: number;
     transferAmount?: number;
     changeAmount?: number;
+    otherLabel?: string;
     orderNote?: string | null;
     createdAt: string;
     cashierName: string;
@@ -277,6 +278,12 @@ export const Receipt = ({ order }: ReceiptProps) => {
               <span>{formatRp(order.transferAmount || 0)}</span>
             </div>
           </>
+        )}
+        {(order.paymentMethod === 'pos_other' || order.paymentMethod === 'other') && (
+          <div style={{ ...rowStyle, fontSize: '14px' }}>
+            <span>{order.otherLabel ?? 'Other'}</span>
+            <span>{formatRp(order.total)}</span>
+          </div>
         )}
       </div>
 

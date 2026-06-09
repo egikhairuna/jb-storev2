@@ -54,13 +54,15 @@ export function useReports() {
     const uniqueOrderIds = new Set(rows.map((r) => r.orderId));
     const totalCash = rows.reduce((sum, r) => sum + (r.cash || 0), 0);
     const totalTransfer = rows.reduce((sum, r) => sum + (r.transfer || 0), 0);
+    const totalOthers = rows.reduce((sum, r) => sum + (r.others || 0), 0);
 
     return {
       totalOrders: uniqueOrderIds.size,
       totalItems: rows.length,
       totalCash: Math.round(totalCash),
       totalTransfer: Math.round(totalTransfer),
-      totalRevenue: Math.round(totalCash + totalTransfer),
+      totalOthers: Math.round(totalOthers),
+      totalRevenue: Math.round(totalCash + totalTransfer + totalOthers),
       posOrders:
         source === "pos"
           ? uniqueOrderIds.size

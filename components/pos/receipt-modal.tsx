@@ -18,6 +18,7 @@ interface ReceiptModalProps {
     cashAmount?: number;
     transferAmount?: number;
     changeAmount?: number;
+    otherLabel?: string;
     orderNote?: string | null;
     createdAt: string;
     cashierName: string;

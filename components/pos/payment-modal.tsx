@@ -27,6 +27,7 @@ interface CompletedOrder {
   cashAmount?: number;
   transferAmount?: number;
   changeAmount?: number;
+  otherLabel?: string;
   orderNote?: string | null;
   createdAt: string;
   cashierName: string;
@@ -48,7 +49,8 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
     total: getTotal
   } = useCartStore();
 
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer" | "split">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer" | "split" | "other">("cash");
+  const [otherLabel, setOtherLabel] = useState<string>("");
   const [givenAmount, setGivenAmount] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
   const [errorData, setErrorData] = useState<{ message?: string; items?: { name: string; requested: number; available: number }[] } | null>(null);
@@ -80,6 +82,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
   const canConfirm = 
     paymentMethod === "cash" ? (parseFloat(givenAmount) || 0) >= total :
     paymentMethod === "split" ? splitSum === total :
+    paymentMethod === "other" ? otherLabel.trim().length > 0 :
     true;
 
   useEffect(() => {
@@ -89,10 +92,15 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
       setError(null);
       setGivenAmount("");
       setTransferAmount("");
+      setOtherLabel("");
       setExpandedSection(null);
       setIsSubmitting(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setOtherLabel("");
+  }, [paymentMethod]);
 
   useEffect(() => {
     if (isOpen && (paymentMethod === "cash" || paymentMethod === "split")) {
@@ -147,7 +155,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
           quantity: item.quantity,
           price: item.price,
         })),
-        paymentMethod: paymentMethod === "cash" ? "pos_cash" : paymentMethod === "transfer" ? "pos_transfer" : "pos_split",
+        paymentMethod: paymentMethod === "cash" ? "pos_cash" : paymentMethod === "transfer" ? "pos_transfer" : paymentMethod === "split" ? "pos_split" : "pos_other",
         discountAmount,
         discountType,
         discountValue,
@@ -156,6 +164,8 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
         transferAmount: paymentMethod === "transfer" ? total : isSplit ? parsedTransfer : 0,
         customerName: customerName || null,
         orderNote: orderNote || null,
+        other_label: paymentMethod === 'other' ? otherLabel.trim() : undefined,
+        other_amount: paymentMethod === 'other' ? total : undefined,
       };
 
       console.log('[payment] submitting order...');
@@ -201,6 +211,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
           cashAmount: paymentMethod === "cash" ? (parsedCash || total) : isSplit ? parsedCash : undefined,
           transferAmount: paymentMethod === "transfer" ? total : isSplit ? parsedTransfer : undefined,
           changeAmount: paymentMethod === "cash" ? Math.max(0, (parsedCash || total) - total) : 0,
+          otherLabel: paymentMethod === 'other' ? otherLabel.trim() : undefined,
           orderNote: orderNote || null,
           createdAt: data.order.createdAt ?? new Date().toISOString(),
           cashierName: session?.user?.name ?? 'Kasir',
@@ -393,7 +404,7 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
             <div className="flex flex-col gap-4">
               {/* Payment Tabs */}
               <div className="bg-white/5 rounded-xl p-1 flex">
-                {(["cash", "transfer", "split"] as const).map((m) => (
+                {(["cash", "transfer", "split", "other"] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => setPaymentMethod(m)}
@@ -517,6 +528,40 @@ export const PaymentModal = ({ isOpen, onClose }: PaymentModalProps) => {
                         <span className="text-xs font-medium text-green-400 uppercase tracking-tighter">✓ Pas</span>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {paymentMethod === "other" && (
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block">
+                        Metode Pembayaran
+                      </label>
+                      <input
+                        type="text"
+                        value={otherLabel}
+                        onChange={e => setOtherLabel(e.target.value)}
+                        placeholder='contoh: "Baymun", "Kasbon", "Debit BCA"'
+                        autoFocus
+                        className="w-full h-10 px-3 rounded-lg text-sm text-white placeholder-white/20 outline-none focus:border-blue-500/50 transition-all"
+                        style={{
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between items-center py-2 px-1
+                      rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <span className="text-white/50 text-sm">Total Pembayaran</span>
+                      <span className="text-white font-mono font-semibold">
+                        {formatRupiah(total)}
+                      </span>
+                    </div>
+                    
+                    <p className="text-white/30 text-xs text-center">
+                      Order akan dibuat dengan status Completed
+                    </p>
                   </div>
                 )}
               </div>

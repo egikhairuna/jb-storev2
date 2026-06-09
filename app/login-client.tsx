@@ -7,7 +7,7 @@ import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 const BACKGROUND_IMAGE_URL =
-  "https://vps.jamesboogie.com/wp-content/uploads/2026/05/Background.jpg";
+  "https://vps.jamesboogie.com/wp-content/uploads/2026/03/1-1-scaled.jpeg";
 
 export default function PosLandingCapturedDescriptorFinalize() {
   const routerCapturedInstanceFinalize = useRouter();
@@ -118,7 +118,7 @@ export default function PosLandingCapturedDescriptorFinalize() {
           </div>
 
           {/* Store name */}
-          <h1 className="text-xl font-semibold text-white mt-1">James Boogie - Store</h1>
+          <h1 className="text-xl font-semibold text-white mt-1">JAMES BOOGIE STORE</h1>
 
           {/* Subtitle */}
           <p className="text-sm text-white/50">Sign in to continue</p>
@@ -224,7 +224,7 @@ export default function PosLandingCapturedDescriptorFinalize() {
           <button
             disabled={routingBusyCapturedDescriptorFinalize}
             type="submit"
-            className="w-full h-11 rounded-xl text-white text-sm font-semibold transition-all duration-200 active:scale-[0.98] relative overflow-hidden flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-xl text-white text-sm font-semibold cursor-pointer hover:opacity-80 transition-all duration-200 active:scale-[0.98] relative overflow-hidden flex items-center justify-center gap-2"
             style={{
               background: "rgba(255, 255, 255, 0.25)",
               border: "1px solid rgba(255, 255, 255, 0.4)",
@@ -252,7 +252,7 @@ export default function PosLandingCapturedDescriptorFinalize() {
                 <span>Loading...</span>
               </>
             ) : (
-              "Sign in"
+              "MANGGA LEBET"
             )}
           </button>
         </form>
@@ -260,7 +260,7 @@ export default function PosLandingCapturedDescriptorFinalize() {
 
       {/* Footer below card */}
       <p className="text-white/30 text-xs text-center mt-4 tracking-widest uppercase">
-        WOOCOMERCE BASE POS SYSTEM
+        POS SYSTEM | Internal Use Only
       </p>
 
       </div>

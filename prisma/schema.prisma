@@ -97,6 +97,7 @@ model Order {
   discountValue      Float?   @default(0)
   source             String   @default("pos")
   paymentMethodTitle String?
+  otherLabel         String?
 
   idempotencyKeys IdempotencyKey[]
   auditLogs       AuditLog[]

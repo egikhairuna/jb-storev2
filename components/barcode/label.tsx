@@ -33,7 +33,7 @@ export const BarcodeLabel = ({ name, sku, price }: BarcodeLabelProps) => {
       </div>
 
       {/* Bottom Row: SKU left, Price right */}
-      <div className="flex justify-between items-center w-full">
+      <div className="flex justify-between items-start w-full">
         <span className="text-[10px] font-normal text-gray-600">
           {sku || "NO SKU"}
         </span>

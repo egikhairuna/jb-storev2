@@ -51,6 +51,8 @@ export const OrderDetailModal = ({ order, onClose }: OrderDetailModalProps) => {
       }
       return 0;
     })(),
+    otherLabel: order.otherLabel ?? 
+      (order.paymentMethodTitle?.replace('Other - ', '') ?? 'Other'),
     orderNote: order.orderNote || null,
     createdAt: order.createdAt,
     cashierName: order.cashierName || "Kasir"

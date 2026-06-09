@@ -269,8 +269,11 @@ export default function ReportsPage() {
                       "SKU",
                       "NAMA PRODUK",
                       "QTY",
-                      "CASH",
+                      "HARGA BARANG",
                       "TRANSFER",
+                      "CASH",
+                      "OTHERS",
+                      "DISKON",
                       "ONGKIR",
                       "KODE UNIK",
                       "CUSTOMER",
@@ -294,7 +297,7 @@ export default function ReportsPage() {
                         borderBottom: "1px solid rgba(255,255,255,0.04)",
                       }}
                     >
-                      {Array.from({ length: 14 }).map((_, j) => (
+                      {Array.from({ length: 17 }).map((_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div
                             className="h-4 rounded animate-pulse"
@@ -323,7 +326,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             /* Data Table */
-            <div className="px-6 min-w-[1500px]">
+            <div className="px-6 min-w-[1600px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-neutral-900/95 backdrop-blur-md z-10">
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -349,10 +352,19 @@ export default function ReportsPage() {
                       QTY
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-28">
-                      CASH
+                      HARGA BARANG
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-28">
                       TRANSFER
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-28">
+                      CASH
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-28">
+                      OTHERS
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-24">
+                      DISKON
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-24">
                       ONGKIR
@@ -413,6 +425,18 @@ export default function ReportsPage() {
                       <td className="px-3 py-2.5 text-xs text-white/60 font-mono text-center">
                         {row.qty}
                       </td>
+                      <td className="px-3 py-2.5 text-xs text-white/80 font-mono">
+                        {formatRp(row.hargaBarang)}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs font-mono">
+                        {row.transfer != null ? (
+                          <span className="text-blue-400">
+                            {formatRp(row.transfer)}
+                          </span>
+                        ) : (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-xs font-mono">
                         {row.cash != null ? (
                           <span className="text-green-400">
@@ -423,9 +447,18 @@ export default function ReportsPage() {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-xs font-mono">
-                        {row.transfer != null ? (
-                          <span className="text-blue-400">
-                            {formatRp(row.transfer)}
+                        {row.others != null ? (
+                          <span className="text-purple-400 font-mono">
+                            {formatRp(row.others)}
+                          </span>
+                        ) : (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs font-mono">
+                        {row.diskon != null && row.diskon > 0 ? (
+                          <span className="text-orange-400">
+                            {formatRp(row.diskon)}
                           </span>
                         ) : (
                           <span className="text-white/20">—</span>

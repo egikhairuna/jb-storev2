@@ -91,6 +91,11 @@ export async function POST(req: NextRequest) {
       variation_id: item.variationId ? parseInt(item.variationId, 10) : undefined,
     }));
 
+    const discountAmount = validatedData.discountAmount || 0;
+    const subtotal = validatedData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const taxAmount = validatedData.taxAmount || 0;
+    const total = subtotal - discountAmount + taxAmount;
+
     // Map payment methods for WooCommerce
     let paymentMethod = paymentMethodNormalized;
     let paymentMethodTitle = 'POS';
@@ -104,6 +109,9 @@ export async function POST(req: NextRequest) {
     } else if (paymentMethod === 'split') {
       paymentMethod = 'pos_split';
       paymentMethodTitle = `Split Transfer (Tunai: Rp ${Number(validatedData.cashAmount ?? body.cash_amount ?? 0).toLocaleString('id-ID')} / Transfer: Rp ${Number(validatedData.transferAmount ?? body.transfer_amount ?? 0).toLocaleString('id-ID')})`;
+    } else if (paymentMethod === 'other') {
+      paymentMethod = 'pos_other';
+      paymentMethodTitle = `Other - ${body.other_label ?? 'Other'}`;
     }
 
     const meta_data = [
@@ -117,12 +125,13 @@ export async function POST(req: NextRequest) {
         { key: '_pos_cash_amount', value: String(validatedData.cashAmount ?? body.cash_amount ?? 0) },
         { key: '_pos_transfer_amount', value: String(validatedData.transferAmount ?? body.transfer_amount ?? 0) }
       );
+    } else if (paymentMethodNormalized === 'other') {
+      meta_data.push(
+        { key: '_pos_payment_method', value: 'other' },
+        { key: '_pos_other_label', value: body.other_label ?? 'Other' },
+        { key: '_pos_other_amount', value: String(body.other_amount ?? total) }
+      );
     }
-
-    const discountAmount = validatedData.discountAmount || 0;
-    const subtotal = validatedData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const taxAmount = validatedData.taxAmount || 0;
-    const total = subtotal - discountAmount + taxAmount;
 
     const fee_lines: { name: string; total: string }[] = discountAmount > 0 ? [{
       name: validatedData.discountType === 'percent'
@@ -155,6 +164,8 @@ export async function POST(req: NextRequest) {
           ? `[POS Split Payment] Tunai: Rp ${Number(cash_amount).toLocaleString('id-ID')} | Transfer: Rp ${Number(transfer_amount).toLocaleString('id-ID')}`
           : paymentMethodNormalized === 'cash'
           ? `[POS Cash Payment] Diterima: Rp ${Number(given_amount).toLocaleString('id-ID')} | Kembalian: Rp ${Number(change_amount).toLocaleString('id-ID')}`
+          : paymentMethodNormalized === 'other'
+          ? `[POS Other Payment] ${body.other_label ?? 'Other'} - Rp ${Number(total).toLocaleString('id-ID')}`
           : `[POS Transfer Payment] Rp ${Number(total).toLocaleString('id-ID')}`;
 
         return validatedData.orderNote 
@@ -182,6 +193,8 @@ export async function POST(req: NextRequest) {
         ? `[POS] Split Payment:\n- Tunai: Rp ${Number(cash_amount).toLocaleString('id-ID')}\n- Transfer: Rp ${Number(transfer_amount).toLocaleString('id-ID')}\n- Total: Rp ${Number(total).toLocaleString('id-ID')}`
         : paymentMethodNormalized === 'cash'
         ? `[POS] Pembayaran Tunai - Diterima: Rp ${Number(given_amount).toLocaleString('id-ID')}, Kembalian: Rp ${Number(change_amount).toLocaleString('id-ID')}`
+        : paymentMethodNormalized === 'other'
+        ? `[POS] Pembayaran: ${body.other_label ?? 'Other'} - Rp ${total.toLocaleString('id-ID')}`
         : `[POS] Pembayaran Transfer - Rp ${Number(total).toLocaleString('id-ID')}`;
 
       await addOrderNote(wcResponse.id, noteContent);
@@ -229,6 +242,7 @@ export async function POST(req: NextRequest) {
         paymentMethodTitle: paymentMethodTitle,
         cashAmount: validatedData.cashAmount,
         transferAmount: validatedData.transferAmount,
+        otherLabel: validatedData.other_label || null,
         customerName: validatedData.customerName,
         orderNote: validatedData.orderNote,
         discountType: validatedData.discountType,
@@ -397,11 +411,13 @@ export async function GET(req: NextRequest) {
         taxAmount: order.taxAmount,
         total: order.total,
         paymentMethod: order.paymentMethod,
+        paymentMethodTitle: order.paymentMethodTitle,
         discountType: order.discountType,
         discountValue: order.discountValue,
         orderNote: order.orderNote,
         cashAmount: order.cashAmount,
         transferAmount: order.transferAmount,
+        otherLabel: order.otherLabel,
         customerName: order.customerName,
         syncStatus: order.syncStatus,
         retryCount: order.retryCount,

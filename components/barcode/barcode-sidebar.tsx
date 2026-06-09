@@ -110,8 +110,8 @@ export const BarcodeSidebar = () => {
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-3 shrink-0">
-        <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-[0.2em] mb-3">
-          Barcode Queue
+        <h2 className="text-[16px] font-bold text-white/50 uppercase tracking-[0.2em] mb-3">
+          BarCode Queue
         </h2>
 
         {/* Search Combobox */}

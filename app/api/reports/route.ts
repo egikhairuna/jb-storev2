@@ -35,6 +35,10 @@ interface WCOrderForReport {
     total: string;
     meta_data: Array<{ key: string; value: unknown }>;
   }>;
+  fee_lines?: Array<{
+    name: string;
+    total: string;
+  }>;
   meta_data: Array<{ key: string; value: unknown }>;
 }
 
@@ -264,40 +268,55 @@ export async function GET(request: NextRequest) {
       const subtotal = order.subtotal > 0 ? order.subtotal : 1;
       const cashAmount = order.cashAmount ?? 0;
       const transferAmount = order.transferAmount ?? 0;
-
-      let accumulatedCash = 0;
-      let accumulatedTransfer = 0;
+      const discountAmount = order.discountAmount ?? 0;
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const itemPrice = item.price ?? 0;
         const itemQty = item.quantity ?? 1;
-        const itemValue = itemPrice * itemQty;
+        const hargaBarang = itemPrice * itemQty;
+        const itemProportion = hargaBarang / subtotal;
+
+        // Proportional discount per line item
+        const diskon = discountAmount > 0
+          ? Math.round(discountAmount * itemProportion)
+          : null;
+        const itemNet = hargaBarang - (diskon ?? 0);
 
         let cash: number | null = null;
         let transfer: number | null = null;
+        let others: number | null = null;
 
-        if (order.paymentMethod === "cash") {
-          cash = itemValue;
+        const pm = order.paymentMethod;
+        const orderTotal = order.total ?? 0;
+
+        if (pm === "cash" || pm === "pos_cash") {
+          cash = itemNet;
           transfer = null;
-        } else if (order.paymentMethod === "transfer") {
+          others = null;
+        } else if (pm === "transfer" || pm === "pos_transfer") {
           cash = null;
-          transfer = itemValue;
-        } else if (order.paymentMethod === "split") {
-          const itemProportion = itemValue / subtotal;
-          
-          if (i === items.length - 1) {
-            cash = Math.round(cashAmount - accumulatedCash);
-            transfer = Math.round(transferAmount - accumulatedTransfer);
+          transfer = itemNet;
+          others = null;
+        } else if (pm === "split" || pm === "pos_split") {
+          if (orderTotal <= 0) {
+            cash = 0;
+            transfer = 0;
           } else {
-            cash = Math.round(cashAmount * itemProportion);
-            transfer = Math.round(transferAmount * itemProportion);
-            accumulatedCash += cash;
-            accumulatedTransfer += transfer;
+            const cashRatio = cashAmount / orderTotal;
+            const transferRatio = transferAmount / orderTotal;
+            cash = Math.round(itemNet * cashRatio);
+            transfer = Math.round(itemNet * transferRatio);
           }
-        } else {
-          cash = itemValue;
+          others = null;
+        } else if (pm === "other" || pm === "pos_other") {
+          cash = null;
           transfer = null;
+          others = itemNet;
+        } else {
+          cash = itemNet;
+          transfer = null;
+          others = null;
         }
 
         posRows.push({
@@ -310,8 +329,11 @@ export async function GET(request: NextRequest) {
             ? `${item.name} - ${item.variantName}`
             : item.name || "-",
           qty: itemQty,
-          cash,
+          hargaBarang,
           transfer,
+          cash,
+          others,
+          diskon,
           ongkosKirim: null,
           kodeUnik: null,
           customerName,
@@ -348,6 +370,14 @@ export async function GET(request: NextRequest) {
       );
       const kodeUnik = uniqueCodeMeta?.value ? String(uniqueCodeMeta.value) : null;
 
+      // Detect discount from fee_lines (negative amount)
+      const discountFee = order.fee_lines?.find(
+        (f) => parseFloat(f.total) < 0
+      );
+      const wcDiscountAmount = discountFee
+        ? Math.abs(parseFloat(discountFee.total))
+        : 0;
+
       const customerName = [
         order.billing?.first_name,
         order.billing?.last_name,
@@ -377,44 +407,62 @@ export async function GET(request: NextRequest) {
           : new Date(order.date_created + "+07:00"));
       const tanggal = formatTanggal(rawDate);
 
-      let accumulatedCash = 0;
-      let accumulatedTransfer = 0;
+      // Sum of line item gross totals for proportion calculation
+      const lineItemGrossSum = lineItems.reduce(
+        (sum, it) => sum + (parseFloat(it.price) || 0) * (it.quantity || 1),
+        0
+      ) || 1;
 
       for (let i = 0; i < lineItems.length; i++) {
         const item = lineItems[i];
         const itemTotal = parseFloat(item.total) || 0;
+        const hargaBarang = (parseFloat(item.price) || 0) * (item.quantity || 1);
+        const itemProportion = hargaBarang / lineItemGrossSum;
+
+        // Proportional discount per line item
+        const diskon = wcDiscountAmount > 0
+          ? Math.round(wcDiscountAmount * itemProportion)
+          : null;
+        const itemNet = hargaBarang - (diskon ?? 0);
 
         let cash: number | null = null;
         let transfer: number | null = null;
+        let others: number | null = null;
 
         if (!isPOS) {
           // Website order: use lineItem.total as transfer
           cash = null;
-          transfer = itemTotal;
+          transfer = Math.round(itemTotal);
+          others = null;
         } else {
           // POS order synced to WC
-          if (order.payment_method === "pos_split" || (cashMeta && transferMeta)) {
-            // Split payment: proportional distribution based on sum of line item totals
-            const totalItemsSum = lineItems.reduce((sum, it) => sum + (parseFloat(it.total) || 0), 0) || 1;
-            const itemProportion = itemTotal / totalItemsSum;
-            
-            if (i === lineItems.length - 1) {
-              cash = Math.round(cashAmount - accumulatedCash);
-              transfer = Math.round(transferAmount - accumulatedTransfer);
+          const pm = order.payment_method;
+          const orderTotal = parseFloat(order.total) || 0;
+
+          if (pm === "pos_split" || (cashMeta && transferMeta)) {
+            if (orderTotal <= 0) {
+              cash = 0;
+              transfer = 0;
             } else {
-              cash = Math.round(cashAmount * itemProportion);
-              transfer = Math.round(transferAmount * itemProportion);
-              accumulatedCash += cash;
-              accumulatedTransfer += transfer;
+              const cashRatio = cashAmount / orderTotal;
+              const transferRatio = transferAmount / orderTotal;
+              cash = Math.round(itemNet * cashRatio);
+              transfer = Math.round(itemNet * transferRatio);
             }
-          } else if (order.payment_method === "pos_cash" || cashMeta) {
-            // Cash payment
-            cash = itemTotal;
+            others = null;
+          } else if (pm === "pos_cash" || cashMeta) {
+            cash = itemNet;
             transfer = null;
+            others = null;
+          } else if (pm === "pos_other") {
+            cash = null;
+            transfer = null;
+            others = itemNet;
           } else {
             // Default: assume transfer (pos_transfer, bacs, website payments, etc.)
             cash = null;
-            transfer = itemTotal;
+            transfer = itemNet;
+            others = null;
           }
         }
 
@@ -426,8 +474,11 @@ export async function GET(request: NextRequest) {
           sku: item.sku || "-",
           productName: item.name || "-",
           qty: item.quantity || 1,
-          cash,
+          hargaBarang,
           transfer,
+          cash,
+          others,
+          diskon,
           ongkosKirim: shippingTotal > 0 ? shippingTotal : null,
           kodeUnik,
           customerName: resolvedCustomerName,
@@ -460,13 +511,15 @@ export async function GET(request: NextRequest) {
       (sum, r) => sum + (r.transfer || 0),
       0
     );
-
+    const totalOthers = allRows.reduce((sum, r) => sum + (r.others || 0), 0);
+ 
     const summary = {
       totalOrders: uniqueOrderIds.size,
       totalItems: allRows.length,
       totalCash: Math.round(totalCash),
       totalTransfer: Math.round(totalTransfer),
-      totalRevenue: Math.round(totalCash + totalTransfer),
+      totalOthers: Math.round(totalOthers),
+      totalRevenue: Math.round(totalCash + totalTransfer + totalOthers),
       posOrders: posOrderIds.size,
       wcOrders: wcOrderIds.size,
     };
