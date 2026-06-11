@@ -281,42 +281,36 @@ export async function GET(request: NextRequest) {
         const diskon = discountAmount > 0
           ? Math.round(discountAmount * itemProportion)
           : null;
-        const itemNet = hargaBarang - (diskon ?? 0);
 
         let cash: number | null = null;
         let transfer: number | null = null;
         let others: number | null = null;
 
-        const pm = order.paymentMethod;
-        const orderTotal = order.total ?? 0;
+        // Only assign payment amounts to the first line item of each order
+        if (i === 0) {
+          const pm = order.paymentMethod;
 
-        if (pm === "cash" || pm === "pos_cash") {
-          cash = itemNet;
-          transfer = null;
-          others = null;
-        } else if (pm === "transfer" || pm === "pos_transfer") {
-          cash = null;
-          transfer = itemNet;
-          others = null;
-        } else if (pm === "split" || pm === "pos_split") {
-          if (orderTotal <= 0) {
-            cash = 0;
-            transfer = 0;
+          if (pm === "cash" || pm === "pos_cash") {
+            cash = cashAmount > 0 ? cashAmount : order.total;
+            transfer = null;
+            others = null;
+          } else if (pm === "transfer" || pm === "pos_transfer") {
+            cash = null;
+            transfer = order.total;
+            others = null;
+          } else if (pm === "split" || pm === "pos_split") {
+            cash = cashAmount;
+            transfer = transferAmount;
+            others = null;
+          } else if (pm === "other" || pm === "pos_other") {
+            cash = null;
+            transfer = null;
+            others = order.total;
           } else {
-            const cashRatio = cashAmount / orderTotal;
-            const transferRatio = transferAmount / orderTotal;
-            cash = Math.round(itemNet * cashRatio);
-            transfer = Math.round(itemNet * transferRatio);
+            cash = order.total;
+            transfer = null;
+            others = null;
           }
-          others = null;
-        } else if (pm === "other" || pm === "pos_other") {
-          cash = null;
-          transfer = null;
-          others = itemNet;
-        } else {
-          cash = itemNet;
-          transfer = null;
-          others = null;
         }
 
         posRows.push({
@@ -415,7 +409,6 @@ export async function GET(request: NextRequest) {
 
       for (let i = 0; i < lineItems.length; i++) {
         const item = lineItems[i];
-        const itemTotal = parseFloat(item.total) || 0;
         const hargaBarang = (parseFloat(item.price) || 0) * (item.quantity || 1);
         const itemProportion = hargaBarang / lineItemGrossSum;
 
@@ -429,40 +422,37 @@ export async function GET(request: NextRequest) {
         let transfer: number | null = null;
         let others: number | null = null;
 
-        if (!isPOS) {
-          // Website order: use lineItem.total as transfer
-          cash = null;
-          transfer = Math.round(itemTotal);
-          others = null;
-        } else {
-          // POS order synced to WC
-          const pm = order.payment_method;
+        // Only assign payment amounts to the first line item of each order
+        if (i === 0) {
           const orderTotal = parseFloat(order.total) || 0;
 
-          if (pm === "pos_split" || (cashMeta && transferMeta)) {
-            if (orderTotal <= 0) {
-              cash = 0;
-              transfer = 0;
-            } else {
-              const cashRatio = cashAmount / orderTotal;
-              const transferRatio = transferAmount / orderTotal;
-              cash = Math.round(itemNet * cashRatio);
-              transfer = Math.round(itemNet * transferRatio);
-            }
-            others = null;
-          } else if (pm === "pos_cash" || cashMeta) {
-            cash = itemNet;
-            transfer = null;
-            others = null;
-          } else if (pm === "pos_other") {
+          if (!isPOS) {
+            // Website order: full order total as transfer
             cash = null;
-            transfer = null;
-            others = itemNet;
+            transfer = orderTotal;
+            others = null;
           } else {
-            // Default: assume transfer (pos_transfer, bacs, website payments, etc.)
-            cash = null;
-            transfer = itemNet;
-            others = null;
+            // POS order synced to WC
+            const pm = order.payment_method;
+
+            if (pm === "pos_split" || (cashMeta && transferMeta)) {
+              cash = cashAmount;
+              transfer = transferAmount;
+              others = null;
+            } else if (pm === "pos_cash" || cashMeta) {
+              cash = cashAmount > 0 ? cashAmount : orderTotal;
+              transfer = null;
+              others = null;
+            } else if (pm === "pos_other") {
+              cash = null;
+              transfer = null;
+              others = orderTotal;
+            } else {
+              // Default: assume transfer (pos_transfer, bacs, website payments, etc.)
+              cash = null;
+              transfer = orderTotal;
+              others = null;
+            }
           }
         }
 
