@@ -24,7 +24,13 @@ interface WCOrderForReport {
     address_1?: string;
     city?: string;
     state?: string;
+    postcode?: string;
   };
+  shipping_lines?: Array<{
+    method_title: string;
+    method_id: string;
+    total: string;
+  }>;
   line_items: Array<{
     product_id: number;
     variation_id: number | null;
@@ -333,6 +339,9 @@ export async function GET(request: NextRequest) {
           customerName,
           noHp: null,
           alamat: null,
+          kodePos: null,
+          metodePengiriman: null,
+          noResi: null,
         });
       }
     }
@@ -392,6 +401,58 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
         .join(", ") || null;
 
+      // Kode Pos
+      const kodePos = order.billing?.postcode || null;
+
+      // Metode Pengiriman — from shipping_lines
+      const metodePengiriman =
+        order.shipping_lines && order.shipping_lines.length > 0
+          ? order.shipping_lines[0].method_title
+          : null;
+
+      // No Resi — JNE plugin stores AWB in meta_data
+      const resiMetaKeys = [
+        "jneshof_shipping_tracking_number",
+        "jneshof_shipping_pickup_number",
+        "_jne_awb_number",
+        "_jne_resi",
+        "jne_awb",
+        "_wc_shipment_tracking_number",
+        "_tracking_number",
+        "resi_number",
+        "_jne_tracking_number",
+        "awb_number",
+        "_awb_number",
+      ];
+
+      let noResi: string | null = null;
+      for (const key of resiMetaKeys) {
+        const meta = order.meta_data?.find((m) => m.key === key);
+        if (meta?.value && String(meta.value).trim()) {
+          noResi = String(meta.value).trim();
+          break;
+        }
+      }
+
+      if (!noResi) {
+        const resiMeta = order.meta_data?.find(
+          (m) =>
+            m.key.toLowerCase().includes("resi") ||
+            m.key.toLowerCase().includes("awb") ||
+            m.key.toLowerCase().includes("tracking")
+        );
+        if (resiMeta?.value) {
+          noResi = String(resiMeta.value).trim() || null;
+        }
+      }
+
+      if (!isPOS && !wcRows.some((r) => r.sumber === "Website")) {
+        console.log(
+          "[reports] First website order meta_data keys:",
+          order.meta_data?.map((m) => m.key).join(", ")
+        );
+      }
+
       const rawDate = order.date_created_gmt
         ? (order.date_created_gmt.endsWith("Z") || order.date_created_gmt.includes("+")
           ? new Date(order.date_created_gmt)
@@ -416,7 +477,6 @@ export async function GET(request: NextRequest) {
         const diskon = wcDiscountAmount > 0
           ? Math.round(wcDiscountAmount * itemProportion)
           : null;
-        const itemNet = hargaBarang - (diskon ?? 0);
 
         let cash: number | null = null;
         let transfer: number | null = null;
@@ -474,6 +534,9 @@ export async function GET(request: NextRequest) {
           customerName: resolvedCustomerName,
           noHp,
           alamat,
+          kodePos: !isPOS ? kodePos : null,
+          metodePengiriman: !isPOS ? metodePengiriman : null,
+          noResi: !isPOS ? noResi : null,
         });
       }
     }

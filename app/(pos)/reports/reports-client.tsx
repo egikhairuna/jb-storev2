@@ -279,6 +279,9 @@ export default function ReportsPage() {
                       "CUSTOMER",
                       "NO HP",
                       "ALAMAT",
+                      "KODE POS",
+                      "METODE PENGIRIMAN",
+                      "NO RESI",
                     ].map((h) => (
                       <th
                         key={h}
@@ -297,7 +300,7 @@ export default function ReportsPage() {
                         borderBottom: "1px solid rgba(255,255,255,0.04)",
                       }}
                     >
-                      {Array.from({ length: 17 }).map((_, j) => (
+                      {Array.from({ length: 20 }).map((_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div
                             className="h-4 rounded animate-pulse"
@@ -326,7 +329,7 @@ export default function ReportsPage() {
             </div>
           ) : (
             /* Data Table */
-            <div className="px-6 min-w-[1600px]">
+            <div className="px-6 min-w-[1950px]">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-neutral-900/95 backdrop-blur-md z-10">
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
@@ -380,6 +383,15 @@ export default function ReportsPage() {
                     </th>
                     <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-48">
                       ALAMAT
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-24">
+                      KODE POS
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-40">
+                      METODE PENGIRIMAN
+                    </th>
+                    <th className="px-3 py-3 text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] w-36">
+                      NO RESI
                     </th>
                   </tr>
                 </thead>
@@ -491,6 +503,21 @@ export default function ReportsPage() {
                       <td className="px-3 py-2.5 text-xs text-white/40 truncate max-w-[180px]">
                         {row.alamat || (
                           <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-white/60 font-mono">
+                        {row.kodePos || (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-white/70">
+                        {row.metodePengiriman || (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-amber-400 font-mono font-semibold">
+                        {row.noResi || (
+                          <span className="text-white/20 font-normal">—</span>
                         )}
                       </td>
                     </tr>

@@ -23,6 +23,9 @@ const HEADERS = [
   "Customer",
   "No HP",
   "Alamat",
+  "Kode Pos",
+  "Metode Pengiriman",
+  "No Resi",
 ];
 
 function rowToArray(row: ReportRow): (string | number)[] {
@@ -44,6 +47,9 @@ function rowToArray(row: ReportRow): (string | number)[] {
     row.customerName ?? "",
     row.noHp ?? "",
     row.alamat ?? "",
+    row.kodePos ?? "",
+    row.metodePengiriman ?? "",
+    row.noResi ?? "",
   ];
 }
 
@@ -92,6 +98,9 @@ export function exportExcel(rows: ReportRow[], filename: string) {
     { wch: 20 },  // Customer
     { wch: 15 },  // No HP
     { wch: 40 },  // Alamat
+    { wch: 10 },  // Kode Pos
+    { wch: 25 },  // Metode Pengiriman
+    { wch: 20 },  // No Resi
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Laporan");
@@ -166,6 +175,9 @@ export function exportPDF(
       14: { cellWidth: 22 },    // Customer
       15: { cellWidth: 20 },    // No HP
       16: { cellWidth: "auto" }, // Alamat
+      17: { cellWidth: 12 },    // Kode Pos
+      18: { cellWidth: 25 },    // Metode Pengiriman
+      19: { cellWidth: "auto" }, // No Resi
     },
     didParseCell: (data) => {
       // Color SUMBER column

@@ -155,6 +155,9 @@ export interface ReportRow {
   customerName: string | null;
   noHp: string | null;
   alamat: string | null;
+  kodePos: string | null;
+  metodePengiriman: string | null;
+  noResi: string | null;
 }
 
 /** Aggregated totals computed from the full report dataset. */
