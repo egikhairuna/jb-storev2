@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { X, Printer } from "lucide-react";
+import { X, Printer, Pencil } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import { Receipt } from "./receipt";
 import type { OrderSummary, OrderItemPayload } from "@/types/api-schemas";
@@ -7,9 +7,10 @@ import type { OrderSummary, OrderItemPayload } from "@/types/api-schemas";
 interface OrderDetailModalProps {
   order: OrderSummary | null;
   onClose: () => void;
+  onEdit?: (order: OrderSummary) => void;
 }
 
-export const OrderDetailModal = ({ order, onClose }: OrderDetailModalProps) => {
+export const OrderDetailModal = ({ order, onClose, onEdit }: OrderDetailModalProps) => {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
@@ -87,10 +88,28 @@ export const OrderDetailModal = ({ order, onClose }: OrderDetailModalProps) => {
         </div>
 
         {/* Actions */}
-        <div className="p-6">
+        <div className="p-6 space-y-3">
+          <button
+            disabled={!order.wcOrderId}
+            title={!order.wcOrderId ? "Order belum tersync ke WooCommerce" : "Edit Order"}
+            onClick={() => {
+              if (!order.wcOrderId) return;
+              onClose();
+              onEdit?.(order);
+            }}
+            className="h-12 w-full rounded-xl flex items-center justify-center gap-3 text-sm font-semibold transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-amber-400 hover:bg-amber-500/20"
+            style={{
+              background: 'rgba(234,179,8,0.15)',
+              border: '1px solid rgba(234,179,8,0.3)',
+            }}
+          >
+            <Pencil className="w-5 h-5 text-amber-400" />
+            Edit Order
+          </button>
+
           <button
             onClick={() => handlePrint()}
-            className="h-12 w-full rounded-xl flex items-center justify-center gap-3 text-sm font-semibold transition-all active:scale-95 mb-3"
+            className="h-12 w-full rounded-xl flex items-center justify-center gap-3 text-sm font-semibold transition-all active:scale-95"
             style={{ 
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.1)',
@@ -112,3 +131,4 @@ export const OrderDetailModal = ({ order, onClose }: OrderDetailModalProps) => {
     </div>
   );
 };
+

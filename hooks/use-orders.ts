@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS } from '@/lib/query-keys';
 import { useCartStore } from '@/store/cart.store';
-import type { CreateOrderRequest } from '@/types/api-schemas';
+import type { CreateOrderRequest, OrderItemPayload } from '@/types/api-schemas';
 import type { POSOrder } from '@/types/pos';
 
 interface CreateOrderMutationArgs {
@@ -96,3 +96,49 @@ export function useCleanupOrders() {
     }
   });
 }
+
+export interface EditOrderPayload {
+  items?: OrderItemPayload[];
+  line_items?: Array<{
+    id?: number;
+    product_id?: number;
+    variation_id?: number;
+    quantity: number;
+  }>;
+  payment_method?: string;
+  payment_method_title?: string;
+  customer_name?: string;
+  order_note?: string;
+  cash_amount?: number;
+  transfer_amount?: number;
+  other_label?: string;
+  total?: number;
+}
+
+export function useEditOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      wcOrderId,
+      payload,
+    }: {
+      wcOrderId: string;
+      payload: EditOrderPayload;
+    }) => {
+      const res = await fetch(`/api/orders/${wcOrderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Edit failed');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.products(), refetchType: 'active' });
+    },
+  });
+}
+

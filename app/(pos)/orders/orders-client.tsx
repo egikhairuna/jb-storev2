@@ -13,7 +13,10 @@ import {
 import { SidebarNav } from "@/components/pos/sidebar-nav";
 import { useOrders, useCleanupOrders } from "@/hooks/use-orders";
 import { OrderDetailModal } from "@/components/pos/order-detail-modal";
+import { EditOrderModal } from "@/components/pos/edit-order-modal";
 import { useSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/query-keys";
 import type { OrderSummary } from "@/types/api-schemas";
 
 const PER_PAGE = 20;
@@ -22,7 +25,9 @@ export default function OperationalOrdersPage() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
+  const [editingOrder, setEditingOrder] = useState<OrderSummary | null>(null);
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
 
   const { data: ordersData, isLoading, isError } = useOrders({
     page,
@@ -234,7 +239,21 @@ export default function OperationalOrdersPage() {
       <OrderDetailModal 
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
+        onEdit={(order) => {
+          setSelectedOrder(null);
+          setEditingOrder(order);
+        }}
+      />
+
+      <EditOrderModal
+        order={editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onSuccess={() => {
+          setEditingOrder(null);
+          queryClient.invalidateQueries({ queryKey: QUERY_KEYS.orders() });
+        }}
       />
     </div>
   );
 }
+

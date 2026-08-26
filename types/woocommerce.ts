@@ -83,6 +83,7 @@ export interface WCVariation {
 
 /** Persisted WooCommerce basket line reconstructed from fulfilled orders or admin responses. */
 export interface WCOrderLineItem {
+  readonly id?: number;
   readonly product_id: number;
   readonly variation_id: number | null;
   readonly name: string;

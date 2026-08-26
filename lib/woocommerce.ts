@@ -178,6 +178,25 @@ export async function getProductVariations(productId: string): Promise<WCVariati
   });
 }
 
+export async function getWCOrder(wcOrderId: string): Promise<WCOrderResponse> {
+  const response = await api.fetch(`/orders/${encodeURIComponent(wcOrderId)}`, {
+    cache: "no-store",
+  });
+  return (await response.json()) as WCOrderResponse;
+}
+
+export async function updateWCOrder(
+  wcOrderId: string,
+  payload: Record<string, unknown>
+): Promise<WCOrderResponse> {
+  const response = await api.fetch(`/orders/${encodeURIComponent(wcOrderId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  return (await response.json()) as WCOrderResponse;
+}
+
 export async function createOrder(payload: WCOrderRequest): Promise<WCOrderResponse> {
   const response = await api.fetch("/orders", {
     method: "POST",
