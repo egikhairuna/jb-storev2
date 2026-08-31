@@ -179,7 +179,18 @@ export async function PUT(
       });
     }
 
+    if (body.discount_type !== undefined) {
+      metaData.push(
+        { key: '_pos_discount_type', value: body.discount_type ?? 'none' },
+        { key: '_pos_discount_value', value: String(body.discount_value || 0) },
+        { key: '_pos_discount_amount', value: String(body.discount_amount || 0) }
+      );
+    }
+
     wcUpdatePayload.meta_data = metaData;
+
+    // Fee lines for discount
+    wcUpdatePayload.fee_lines = body.fee_lines ?? [];
 
     // Set status back to completed
     wcUpdatePayload.status = 'completed';
@@ -201,6 +212,9 @@ export async function PUT(
       data: {
         items: updatedItems ? JSON.stringify(updatedItems) : undefined,
         subtotal: subtotal !== undefined ? subtotal : undefined,
+        discountType: body.discount_type ?? null,
+        discountValue: body.discount_value ?? 0,
+        discountAmount: body.discount_amount ?? 0,
         total: total !== undefined ? total : undefined,
         paymentMethod: paymentMethod ?? undefined,
         paymentMethodTitle: paymentMethodTitle ?? undefined,

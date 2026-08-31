@@ -13,7 +13,8 @@ import {
   MessageSquare,
   PackagePlus,
   Tag,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from "lucide-react";
 import { useCartStore } from "@/store/cart.store";
 import { useEditOrder } from "@/hooks/use-orders";
@@ -61,6 +62,15 @@ export const EditOrderModal = ({
   const [cashAmount, setCashAmount] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
   const [otherLabel, setOtherLabel] = useState("");
+  const [discountType, setDiscountType] = useState<"percent" | "nominal" | null>(
+    (order?.discountType as "percent" | "nominal" | null) ?? null
+  );
+  const [discountValue, setDiscountValue] = useState<number>(
+    order?.discountValue ?? 0
+  );
+  const [discountOpen, setDiscountOpen] = useState(
+    (order?.discountAmount ?? 0) > 0
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Search combobox state
@@ -105,6 +115,9 @@ export const EditOrderModal = ({
         order.otherLabel ||
           (order.paymentMethodTitle?.replace(/^Other\s*-\s*/i, "") ?? "")
       );
+      setDiscountType((order.discountType as "percent" | "nominal" | null) ?? null);
+      setDiscountValue(order.discountValue ?? 0);
+      setDiscountOpen((order.discountAmount ?? 0) > 0);
       setError(null);
       setSearchOpen(false);
       setSearchQuery("");
@@ -174,17 +187,23 @@ export const EditOrderModal = ({
   }, [editedItems]);
 
   const discountAmount = useMemo(() => {
-    if (!order) return 0;
-    if (order.discountType === "percent" && order.discountValue) {
-      return (subtotal * order.discountValue) / 100;
+    if (!discountType || discountValue <= 0) return 0;
+    if (discountType === "percent") {
+      return Math.round(subtotal * (Math.min(discountValue, 100) / 100));
     }
-    if (order.discountType === "nominal" && order.discountValue) {
-      return order.discountValue;
-    }
-    return order.discountAmount || 0;
-  }, [order, subtotal]);
+    return Math.min(discountValue, subtotal);
+  }, [discountType, discountValue, subtotal]);
 
   const total = Math.max(0, subtotal - discountAmount);
+
+  const formatRp = (val: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(val).replace("Rp", "Rp ");
+  };
+  const formatIDR = formatRp;
 
   // Split calculations
   const parsedCash = parseFloat(cashAmount) || 0;
@@ -196,6 +215,20 @@ export const EditOrderModal = ({
   const changeAmount = useMemo(() => {
     return Math.max(0, parsedCash - total);
   }, [parsedCash, total]);
+
+  // Auto-update cash amount if total changed and payment method is cash
+  const prevTotalRef = useRef(total);
+  useEffect(() => {
+    if (prevTotalRef.current !== total) {
+      if (paymentMethod === "cash") {
+        const prevCash = parseFloat(cashAmount) || 0;
+        if (prevCash === prevTotalRef.current || cashAmount === "") {
+          setCashAmount(String(total));
+        }
+      }
+      prevTotalRef.current = total;
+    }
+  }, [total, paymentMethod, cashAmount]);
 
   // When switching payment methods, adjust amounts
   const handlePaymentMethodChange = (newMethod: "cash" | "transfer" | "split" | "other") => {
@@ -269,14 +302,6 @@ export const EditOrderModal = ({
     setSearchQuery("");
   };
 
-  const formatIDR = (val: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val).replace("Rp", "Rp ");
-  };
-
   // Validation
   const canSave = useMemo(() => {
     if (editedItems.length === 0) return false;
@@ -331,7 +356,16 @@ export const EditOrderModal = ({
           cash_amount: paymentMethod === "cash" ? (parsedCash || total) : paymentMethod === "split" ? parsedCash : 0,
           transfer_amount: paymentMethod === "transfer" ? total : paymentMethod === "split" ? parsedTransfer : 0,
           other_label: paymentMethod === "other" ? otherLabel.trim() : undefined,
-          total,
+          discount_type: discountType,
+          discount_value: discountValue,
+          discount_amount: discountAmount,
+          total: total,
+          fee_lines: discountAmount > 0 ? [{
+            name: discountType === 'percent'
+              ? `Diskon ${discountValue}%`
+              : 'Diskon',
+            total: String(-discountAmount),
+          }] : [],
         },
       });
 
@@ -800,25 +834,137 @@ export const EditOrderModal = ({
                 ))
               )}
             </div>
+          </div>
 
-            {/* Running Total Card */}
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1.5 text-xs">
-              <div className="flex justify-between text-white/50">
-                <span>Subtotal ({editedItems.reduce((s, i) => s + i.quantity, 0)} item)</span>
-                <span className="font-mono">{formatIDR(subtotal)}</span>
+          {/* Section 4: Discount */}
+          <div className="space-y-2 pt-2 border-t border-white/5">
+            {/* Section header */}
+            <button
+              type="button"
+              onClick={() => setDiscountOpen(prev => !prev)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-2 text-white/50 text-xs uppercase tracking-wider">
+                <Tag className="w-3.5 h-3.5" />
+                <span>Diskon</span>
+                {discountAmount > 0 && (
+                  <span className="text-green-400 normal-case tracking-normal text-xs font-mono">
+                    -{formatRp(discountAmount)}
+                  </span>
+                )}
               </div>
-              {discountAmount > 0 && (
-                <div className="flex justify-between text-green-400">
-                  <span>Diskon Order</span>
-                  <span className="font-mono">-{formatIDR(discountAmount)}</span>
+              <ChevronDown className={`w-4 h-4 text-white/30 transition-transform ${discountOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {discountOpen && (
+              <div className="space-y-3">
+                {/* Type selector */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setDiscountType('percent'); setDiscountValue(0) }}
+                    className={`py-2 rounded-lg text-sm font-medium transition-all ${
+                      discountType === 'percent'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                    style={{
+                      background: discountType === 'percent'
+                        ? undefined
+                        : 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                    Percent (%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDiscountType('nominal'); setDiscountValue(0) }}
+                    className={`py-2 rounded-lg text-sm font-medium transition-all ${
+                      discountType === 'nominal'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-white/50 hover:text-white/80'
+                    }`}
+                    style={{
+                      background: discountType === 'nominal'
+                        ? undefined
+                        : 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                    Nominal (Rp)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDiscountType(null); setDiscountValue(0) }}
+                    className="py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 transition-all"
+                    style={{
+                      background: 'rgba(239,68,68,0.08)',
+                      border: '1px solid rgba(239,68,68,0.2)'
+                    }}>
+                    Reset
+                  </button>
                 </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                <span className="text-sm font-bold text-white">Total Baru</span>
-                <span className="text-base font-bold font-mono text-amber-400">
-                  {formatIDR(total)}
+
+                {/* Value input */}
+                {discountType && (
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-sm">
+                      {discountType === 'percent' ? '%' : 'Rp'}
+                    </span>
+                    <input
+                      type="number"
+                      value={discountValue || ''}
+                      onChange={e => {
+                        const v = Number(e.target.value)
+                        if (discountType === 'percent') {
+                          setDiscountValue(Math.min(100, Math.max(0, v)))
+                        } else {
+                          setDiscountValue(Math.max(0, v))
+                        }
+                      }}
+                      placeholder={discountType === 'percent' ? '0–100' : '0'}
+                      className="w-full h-10 pl-9 pr-3 rounded-lg text-sm text-white font-mono outline-none"
+                      style={{
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Discount result */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm px-1">
+                    <span className="text-white/40">Diskon diterapkan</span>
+                    <span className="text-green-400 font-mono">
+                      -{formatRp(discountAmount)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Order Summary */}
+          <div className="space-y-1 py-3 border-y border-white/10">
+            <div className="flex justify-between text-sm">
+              <span className="text-white/40">Subtotal</span>
+              <span className="text-white/70 font-mono">{formatRp(subtotal)}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-white/40">
+                  Diskon {discountType === 'percent' ? `${discountValue}%` : ''}
+                </span>
+                <span className="text-green-400 font-mono">
+                  -{formatRp(discountAmount)}
                 </span>
               </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-white font-semibold">Total</span>
+              <span className="text-white font-mono font-bold text-lg">
+                {formatRp(total)}
+              </span>
             </div>
           </div>
 

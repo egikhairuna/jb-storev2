@@ -112,7 +112,14 @@ export interface EditOrderPayload {
   cash_amount?: number;
   transfer_amount?: number;
   other_label?: string;
+  discount_type?: 'percent' | 'nominal' | null;
+  discount_value?: number;
+  discount_amount?: number;
   total?: number;
+  fee_lines?: Array<{
+    name: string;
+    total: string;
+  }>;
 }
 
 export function useEditOrder() {
